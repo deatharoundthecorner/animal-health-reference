@@ -1,0 +1,66 @@
+body {
+    background-color: #f4f7f5;
+}
+
+.topbar {
+    background: linear-gradient(90deg, #1b4332, #2d6a4f);
+}
+
+.topbar .nav-link.active {
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 6px;
+}
+
+.stat-card {
+    border: 0;
+    border-radius: 14px;
+    color: #fff;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+.stat-1 { background: linear-gradient(135deg, #1b4332, #2d6a4f); }
+.stat-2 { background: linear-gradient(135deg, #2d6a4f, #40916c); }
+.stat-3 { background: linear-gradient(135deg, #7f5539, #b08968); }
+.stat-4 { background: linear-gradient(135deg, #5a4a42, #8d7b6f); }
+
+.table-card {
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
+}
+
+.link-picker {
+    max-height: 320px;
+    overflow-y: auto;
+    background: #fff;
+}
+
+.thumb {
+    width: 64px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #e3ece6;
+}
+
+.chip {
+    display: inline-block;
+    margin: 0 0.3rem 0.35rem 0;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: #e3f2e9;
+    border: 1px solid #c5e3d1;
+    color: #1b4332;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.form-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1b4332;
+    border-bottom: 2px solid #52b788;
+    padding-bottom: 0.25rem;
+    margin: 1.75rem 0 1rem;
+}

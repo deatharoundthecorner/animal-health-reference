@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3']
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      BIO_DB_HOST: 127.0.0.1
+      BIO_DB_PORT: '3306'
+      BIO_DB_NAME: biodiversity_test
+      BIO_DB_USER: root
+      BIO_DB_PASS: root
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_mysql, mbstring, fileinfo
+          coverage: none
+
+      - name: Lint every PHP file
+        run: |
+          status=0
+          while IFS= read -r -d '' file; do
+            php -l "$file" > /dev/null || status=1
+          done < <(find . -name '*.php' -not -path './.git/*' -print0)
+          exit $status
+
+      - name: Install the schema and sample data
+        run: php tools/install.php
+
+      - name: Check that the sample data loaded
+        run: |
+          php -r '
+            $c = require "config/config.php";
+            $p = new PDO("mysql:host={$c["db_host"]};port={$c["db_port"]};dbname={$c["db_name"]}", $c["db_user"], $c["db_pass"]);
+            $minimum = ["animals" => 17, "body_parts" => 32, "diseases" => 19, "sources" => 27];
+            foreach ($minimum as $table => $n) {
+                $got = (int) $p->query("SELECT COUNT(*) FROM $table")->fetchColumn();
+                echo "$table: $got\n";
+                if ($got < $n) { fwrite(STDERR, "Expected at least $n rows in $table\n"); exit(1); }
+            }
+          '
+
+      - name: Create an admin account for the tests
+        run: php tools/create-admin.php ci-admin 'ci-password-123456'
+
+      - name: Start the web server
+        run: |
+          php -S 127.0.0.1:8000 -t . > /tmp/server.log 2>&1 &
+          for i in $(seq 1 20); do
+            curl -s -o /dev/null http://127.0.0.1:8000/index.php && break
+            sleep 1
+          done
+
+      - name: Smoke-test the public pages
+        run: |
+          fail=0
+          for path in index.php animals.php 'animals.php?type=livestock' 'animals.php?threatened=1' \
+              'animal-details.php?id=1' body-parts.php 'body-parts.php?system=3' 'body-part-details.php?id=1' \
+              diseases.php 'diseases.php?zoonotic=1' 'diseases.php?pathogen=virus' 'disease-details.php?id=1' \
+              'symptoms.php?s[]=1&s[]=2' 'search.php?q=fever' about.php admin/login.php; do
+            code=$(curl -g -s -o /tmp/page.html -w '%{http_code}' "http://127.0.0.1:8000/$path")
+            if [ "$code" != "200" ] || grep -Eq 'Fatal error|Warning:|Notice:|Deprecated:|SQLSTATE' /tmp/page.html; then
+              echo "FAIL $code $path"
+              fail=1
+            else
+              echo "ok   $code $path"
+            fi
+          done
+          exit $fail
+
+      - name: Check that the admin area requires a login
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/admin/dashboard.php)
+          echo "anonymous dashboard request: $code"
+          test "$code" = "302"
+
+      - name: Sign in to the admin area
+        run: |
+          jar=$(mktemp)
+          token=$(curl -s -c "$jar" http://127.0.0.1:8000/admin/login.php | grep -o 'name="csrf_token" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"//')
+          code=$(curl -s -o /dev/null -w '%{http_code}' -b "$jar" -c "$jar" \
+            --data-urlencode "csrf_token=$token" -d 'username=ci-admin' --data-urlencode 'password=ci-password-123456' \
+            http://127.0.0.1:8000/admin/login.php)
+          echo "login: $code"
+          test "$code" = "302"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -b "$jar" http://127.0.0.1:8000/admin/dashboard.php)
+          echo "dashboard after login: $code"
+          test "$code" = "200"
+
+      - name: Show the server log if something failed
+        if: failure()
+        run: cat /tmp/server.log

@@ -1,0 +1,15 @@
+# Local configuration and credentials
+config/config.local.php
+.env
+
+# Uploaded images (keep the folder and its .htaccess)
+assets/images/uploads/*
+!assets/images/uploads/.gitkeep
+!assets/images/uploads/.htaccess
+
+# Logs, OS and editor files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

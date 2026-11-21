@@ -1,0 +1,14 @@
+# Optional hardening for Apache (needs AllowOverride enabled for this folder).
+# This is a second line of defence: the PHP code does not depend on it.
+
+<IfModule mod_alias.c>
+    # Internal folders and version-control metadata are never requested over the web.
+    RedirectMatch 404 (?i)(^|/)(\.git|\.github|config|database|includes|tools|docs)(/|$)
+</IfModule>
+
+<IfModule mod_authz_core.c>
+    # Hidden files, SQL files, logs, notes and local settings.
+    <FilesMatch "(?i)(^\.|\.(sql|bak|old|orig|log|ps1|sh|md|yml)$|^config\.local\.php$)">
+        Require all denied
+    </FilesMatch>
+</IfModule>
