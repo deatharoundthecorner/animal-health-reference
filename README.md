@@ -1,5 +1,7 @@
 # Animal Health & Anatomy Reference
 
+[![CI](https://github.com/deatharoundthecorner/animal-health-reference/actions/workflows/ci.yml/badge.svg)](https://github.com/deatharoundthecorner/animal-health-reference/actions/workflows/ci.yml)
+
 An open-source reference for **biologists, veterinarians and students**. It links **animals** to their **body parts** and to the **diseases** that affect them, so you can move in any direction:
 
 - from a species → its organs → the diseases that affect those organs
@@ -57,7 +59,13 @@ PHP 8.1+ (procedural, `strict_types`), MySQL / MariaDB via PDO prepared statemen
 
 ## Quick start (XAMPP)
 
-1. Copy this folder into `htdocs` (for example `C:\xampp\htdocs\biodiversity-system`).
+1. Get the code and put it in `htdocs` (for example `C:\xampp\htdocs\animal-health-reference`):
+
+   ```powershell
+   git clone https://github.com/deatharoundthecorner/animal-health-reference.git
+   ```
+
+   or use **Code → Download ZIP** on the repository page.
 2. Start **Apache** and **MySQL** in the XAMPP Control Panel.
 3. Install the database and sample data from a terminal in the project folder:
 
@@ -71,7 +79,7 @@ PHP 8.1+ (procedural, `strict_types`), MySQL / MariaDB via PDO prepared statemen
    C:\xampp\php\php.exe tools\create-admin.php admin
    ```
 
-5. Open <http://localhost/biodiversity-system/> and sign in at `/admin/login.php`.
+5. Open <http://localhost/animal-health-reference/> (use your folder's name) and sign in at `/admin/login.php`.
 
 Prefer phpMyAdmin? Import `database/schema.sql`, then `database/seed.sql` (optional sample data), then run step 4.
 
@@ -138,7 +146,7 @@ Please report security problems privately, as described in [SECURITY.md](SECURIT
 ## Project structure
 
 ```text
-biodiversity-system/
+animal-health-reference/
 ├── index.php, animals.php, animal-details.php      public pages
 ├── body-parts.php, body-part-details.php
 ├── diseases.php, disease-details.php
