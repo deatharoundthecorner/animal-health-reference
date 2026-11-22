@@ -29,7 +29,7 @@ if (!$feed) {
 
 $plans = run_query(
     $pdo,
-    "SELECT DISTINCT p.id, p.life_stage, a.id AS animal_id, a.common_name
+    "SELECT DISTINCT p.id, p.life_stage, p.sort_order, a.id AS animal_id, a.common_name
      FROM feeding_plan_items i
      INNER JOIN feeding_plans p ON p.id = i.plan_id
      INNER JOIN animals a ON a.id = p.animal_id
