@@ -20,7 +20,39 @@ const LINK_TABLES = [
     'disease_sources' => ['disease_id', 'source_id', false],
     'body_part_sources' => ['body_part_id', 'source_id', false],
     'disease_symptoms' => ['disease_id', 'symptom_id', false],
+    'feed_sources' => ['feed_id', 'source_id', false],
+    'feeding_plan_sources' => ['plan_id', 'source_id', false],
 ];
+
+/**
+ * Read an optional decimal number from a string (a comma is accepted as the decimal mark).
+ * Returns null for an empty value; adds a message to $errors and returns null when the value is invalid.
+ *
+ * @param list<string> $errors
+ */
+function parse_decimal(string $raw, string $label, float $min, float $max, array &$errors): ?float
+{
+    $raw = trim(str_replace(',', '.', $raw));
+    if ($raw === '') {
+        return null;
+    }
+    if (!is_numeric($raw)) {
+        $errors[] = $label . ' must be a number.';
+        return null;
+    }
+    $value = (float) $raw;
+    if ($value < $min || $value > $max) {
+        $errors[] = $label . ' must be between ' . rtrim(rtrim(number_format($min, 3, '.', ''), '0'), '.') . ' and ' . rtrim(rtrim(number_format($max, 3, '.', ''), '0'), '.') . '.';
+        return null;
+    }
+    return $value;
+}
+
+/** POST value as an optional decimal; see parse_decimal(). @param list<string> $errors */
+function post_decimal(string $key, string $label, float $min, float $max, array &$errors): ?float
+{
+    return parse_decimal(post_string($key, 20), $label, $min, $max, $errors);
+}
 
 /** Trimmed POST string, shortened to $maxLength characters. */
 function post_string(string $key, int $maxLength = 255): string

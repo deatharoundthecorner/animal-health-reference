@@ -76,6 +76,8 @@ require __DIR__ . '/includes/navbar.php';
                 <ul class="mb-0">
                     <li>Coverage is small. Domestic mammals and poultry are the most complete; most wild species have little or no anatomy or disease data yet.</li>
                     <li>Anatomy currently uses vertebrate terms. Invertebrates (for example insects) and fish-specific structures such as gills are not covered yet.</li>
+                    <li><strong>Feeding amounts are general starting points, not prescriptions.</strong> They come from published guidelines, are not yet reviewed by a veterinarian or animal nutritionist, and ignore illness, pregnancy, heavy work, heat and individual differences. Sri Lankan data is thin: the dairy rations use feed values measured on nine Kurunegala farms, and many productive stages (for example early-lactation cows, kids, lambs, broilers, buffalo) are not covered yet.</li>
+                    <li>Feed names and values are given in English; Sinhala and Tamil names still need to be added by native speakers.</li>
                     <li>Conservation statuses change when species are reassessed. Check the <a href="https://www.iucnredlist.org/" target="_blank" rel="noopener noreferrer">IUCN Red List</a> for the current status.</li>
                     <li>Reporting duties for notifiable diseases differ by country. “WOAH-listed” is a hint, not legal advice.</li>
                 </ul>

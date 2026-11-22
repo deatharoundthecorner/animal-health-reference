@@ -30,6 +30,18 @@ $gaps = [
     'Animals with no disease' => $count('SELECT COUNT(*) FROM animals a WHERE NOT EXISTS (SELECT 1 FROM animal_diseases x WHERE x.animal_id = a.id)'),
 ];
 
+// Feeding guide gaps (only when the feeding tables exist)
+if (feeding_available($pdo)) {
+    $totals['Feed types'] = $count('SELECT COUNT(*) FROM feeds');
+    $totals['Feeding plans'] = $count('SELECT COUNT(*) FROM feeding_plans');
+    $gaps['Feed types with no source'] = $count('SELECT COUNT(*) FROM feeds f WHERE NOT EXISTS (SELECT 1 FROM feed_sources x WHERE x.feed_id = f.id)');
+    $gaps['Feeding plans with no source'] = $count('SELECT COUNT(*) FROM feeding_plans p WHERE NOT EXISTS (SELECT 1 FROM feeding_plan_sources x WHERE x.plan_id = p.id)');
+    $gaps['Domestic animals with no feeding plan'] = $count("SELECT COUNT(*) FROM animals a WHERE a.animal_type IN ('companion','livestock') AND NOT EXISTS (SELECT 1 FROM feeding_plans x WHERE x.animal_id = a.id)");
+    $gaps['Feeding plans with no diet'] = $count('SELECT COUNT(*) FROM feeding_plans p WHERE NOT EXISTS (SELECT 1 FROM feeding_plan_items x WHERE x.plan_id = p.id)');
+    $reviewRows['Feed types'] = array_map('intval', $pdo->query("SELECT SUM(review_status = 'draft') AS draft, SUM(review_status = 'unreviewed') AS unreviewed, SUM(review_status = 'reviewed') AS reviewed FROM feeds")->fetch());
+    $reviewRows['Feeding plans'] = array_map('intval', $pdo->query("SELECT SUM(review_status = 'draft') AS draft, SUM(review_status = 'unreviewed') AS unreviewed, SUM(review_status = 'reviewed') AS reviewed FROM feeding_plans")->fetch());
+}
+
 $needsReview = $pdo->query(
     "(SELECT 'animal' AS kind, id, common_name AS name, review_status, updated_at FROM animals WHERE review_status <> 'reviewed')
      UNION ALL

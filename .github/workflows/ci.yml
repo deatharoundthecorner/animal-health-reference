@@ -55,15 +55,23 @@ jobs:
           done < <(find . -name '*.php' -not -path './.git/*' -print0)
           exit $status
 
+      - name: Run the unit tests
+        run: php tests/feeding_test.php
+
       - name: Install the schema and sample data
         run: php tools/install.php
+
+      - name: Upgrade an existing installation (must be safe to repeat)
+        run: |
+          php tools/upgrade.php
+          php tools/upgrade.php
 
       - name: Check that the sample data loaded
         run: |
           php -r '
             $c = require "config/config.php";
             $p = new PDO("mysql:host={$c["db_host"]};port={$c["db_port"]};dbname={$c["db_name"]}", $c["db_user"], $c["db_pass"]);
-            $minimum = ["animals" => 17, "body_parts" => 32, "diseases" => 19, "sources" => 27];
+            $minimum = ["animals" => 17, "body_parts" => 32, "diseases" => 19, "sources" => 45, "feeds" => 21, "feeding_plans" => 19, "animal_unsafe_foods" => 29];
             foreach ($minimum as $table => $n) {
                 $got = (int) $p->query("SELECT COUNT(*) FROM $table")->fetchColumn();
                 echo "$table: $got\n";
@@ -88,7 +96,9 @@ jobs:
           for path in index.php animals.php 'animals.php?type=livestock' 'animals.php?threatened=1' \
               'animal-details.php?id=1' body-parts.php 'body-parts.php?system=3' 'body-part-details.php?id=1' \
               diseases.php 'diseases.php?zoonotic=1' 'diseases.php?pathogen=virus' 'disease-details.php?id=1' \
-              'symptoms.php?s[]=1&s[]=2' 'search.php?q=fever' about.php admin/login.php; do
+              'symptoms.php?s[]=1&s[]=2' 'search.php?q=fever' about.php admin/login.php \
+              feeding.php 'feeding.php?animal=3' 'feeds.php' 'feeds.php?category=green_forage' 'feed-details.php?id=1' \
+              'feeding.php?animal=3&stage=Lactating%20dairy%20cow%20(about%2010-17%20litres%20of%20milk%20a%20day)&weight=450'; do
             code=$(curl -g -s -o /tmp/page.html -w '%{http_code}' "http://127.0.0.1:8000/$path")
             if [ "$code" != "200" ] || grep -Eq 'Fatal error|Warning:|Notice:|Deprecated:|SQLSTATE' /tmp/page.html; then
               echo "FAIL $code $path"
@@ -98,6 +108,13 @@ jobs:
             fi
           done
           exit $fail
+
+      - name: Check a feeding calculator result
+        run: |
+          page=$(curl -g -s 'http://127.0.0.1:8000/feeding.php?animal=1&stage=Adult%20-%20neutered%20or%20spayed&weight=10')
+          echo "$page" | grep -q '630 kcal'
+          echo "$page" | grep -q '165 g'
+          echo "dog, 10 kg: 630 kcal and 165 g of dry food, as expected"
 
       - name: Check that the admin area requires a login
         run: |

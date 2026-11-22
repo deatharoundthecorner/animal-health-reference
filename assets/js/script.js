@@ -1,4 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Selects marked data-autosubmit reload the page when changed (used by the feeding calculator
+    // so the life-stage list follows the chosen animal). Without JavaScript the Calculate button does the same.
+    document.querySelectorAll('select[data-autosubmit]').forEach((select) => {
+        select.addEventListener('change', () => {
+            const form = select.closest('form');
+            if (form) {
+                const stage = form.querySelector('select[name="stage"]');
+                if (stage) {
+                    stage.value = '';
+                }
+                form.submit();
+            }
+        });
+    });
+
     // Admin "Add animal" page: optionally prefill fields from the public iNaturalist API.
     // Only the typed common name is sent; nothing is saved until the form is submitted.
     const autoFetchBtn = document.querySelector('#autoFetchBtn');

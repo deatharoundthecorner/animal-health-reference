@@ -57,6 +57,21 @@ $diseases = run_query(
 
 $sources = fetch_sources($pdo, 'animal', $id);
 
+// Feeding guide (only when the feeding tables are installed)
+require_once __DIR__ . '/includes/feeding.php';
+$feedingOn = feeding_available($pdo);
+$feedingPlans = [];
+$unsafeFoods = [];
+if ($feedingOn) {
+    $feedingPlans = feeding_plans_for_animal($pdo, $id);
+    $unsafeFoods = run_query(
+        $pdo,
+        "SELECT food_name, severity, reason FROM animal_unsafe_foods WHERE animal_id = :id ORDER BY FIELD(severity, 'toxic', 'avoid', 'limit'), food_name",
+        ['id' => $id]
+    )->fetchAll();
+}
+$showFeeding = $feedingOn && ($feedingPlans || $unsafeFoods);
+
 $lineage = array_filter([
     $animal['class_name'] ?? '',
     $animal['order_name'] ?? '',
@@ -127,6 +142,13 @@ require __DIR__ . '/includes/navbar.php';
                     Diseases <span class="badge text-bg-secondary"><?= count($diseases) ?></span>
                 </button>
             </li>
+            <?php if ($showFeeding): ?>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-feeding" data-bs-toggle="tab" data-bs-target="#pane-feeding" type="button" role="tab" aria-controls="pane-feeding" aria-selected="false">
+                        Feeding <span class="badge text-bg-secondary"><?= count($feedingPlans) ?></span>
+                    </button>
+                </li>
+            <?php endif; ?>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="tab-sources" data-bs-toggle="tab" data-bs-target="#pane-sources" type="button" role="tab" aria-controls="pane-sources" aria-selected="false">
                     Sources <span class="badge text-bg-secondary"><?= count($sources) ?></span>
@@ -182,6 +204,33 @@ require __DIR__ . '/includes/navbar.php';
                     <p class="text-muted mb-0">No diseases have been linked to this animal yet.</p>
                 <?php endif; ?>
             </div>
+
+            <?php if ($showFeeding): ?>
+                <div class="tab-pane fade" id="pane-feeding" role="tabpanel" aria-labelledby="tab-feeding" tabindex="0">
+                    <?php if ($feedingPlans): ?>
+                        <p>How much to feed depends on the animal's life stage and body weight. Choose a life stage to open the calculator:</p>
+                        <div class="mb-4">
+                            <?php foreach ($feedingPlans as $plan): ?>
+                                <a class="chip" href="<?= e(page_url('feeding.php', ['animal' => $id, 'stage' => $plan['life_stage']])) ?>"><?= e($plan['life_stage']) ?></a>
+                            <?php endforeach; ?>
+                        </div>
+                        <p class="small text-muted">Amounts are starting points from published guidelines and have not all been reviewed by a veterinarian or animal nutritionist. See the <a href="feeds.php">feed types guide</a> for what each feed contains.</p>
+                    <?php endif; ?>
+                    <?php if ($unsafeFoods): ?>
+                        <h2 class="h6 section-heading mt-3">Foods to avoid or limit</h2>
+                        <ul class="list-unstyled mb-0">
+                            <?php foreach ($unsafeFoods as $food): ?>
+                                <?php $badge = match ($food['severity']) { 'toxic' => 'text-bg-danger', 'avoid' => 'text-bg-warning', default => 'text-bg-secondary' }; ?>
+                                <li class="mb-2">
+                                    <span class="badge <?= $badge ?>"><?= e(UNSAFE_SEVERITIES[$food['severity']] ?? $food['severity']) ?></span>
+                                    <strong><?= e($food['food_name']) ?></strong>
+                                    <div class="small text-muted"><?= e($food['reason']) ?></div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
 
             <div class="tab-pane fade" id="pane-sources" role="tabpanel" aria-labelledby="tab-sources" tabindex="0">
                 <?= render_sources($sources) ?>

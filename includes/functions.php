@@ -196,6 +196,35 @@ function page_url(string $page, array $params = []): string
     return $page . ($params ? '?' . http_build_query($params) : '');
 }
 
+/**
+ * True when the feeding guide tables exist. Sites that have not run `php tools/upgrade.php` yet
+ * keep working; the feeding menu and pages are simply hidden.
+ */
+function feeding_available(PDO $pdo): bool
+{
+    static $available = null;
+    if ($available === null) {
+        try {
+            $available = (bool) $pdo->query("SHOW TABLES LIKE 'feeding_plans'")->fetchColumn()
+                && (bool) $pdo->query("SHOW TABLES LIKE 'feeds'")->fetchColumn();
+        } catch (PDOException $e) {
+            $available = false;
+        }
+    }
+    return $available;
+}
+
+/** @return array<string, int> public feed types per category */
+function count_feeds_by_category(PDO $pdo): array
+{
+    $counts = [];
+    $rows = $pdo->query("SELECT feed_category, COUNT(*) AS n FROM feeds WHERE review_status <> 'draft' GROUP BY feed_category")->fetchAll();
+    foreach ($rows as $row) {
+        $counts[$row['feed_category']] = (int) $row['n'];
+    }
+    return $counts;
+}
+
 /** @return array<string, int> public animals per kind (companion, livestock, wildlife, other) */
 function count_animals_by_kind(PDO $pdo): array
 {
@@ -301,6 +330,8 @@ function fetch_sources(PDO $pdo, string $entity, int $id): array
         'animal' => ['animal_sources', 'animal_id'],
         'disease' => ['disease_sources', 'disease_id'],
         'body_part' => ['body_part_sources', 'body_part_id'],
+        'feed' => ['feed_sources', 'feed_id'],
+        'plan' => ['feeding_plan_sources', 'plan_id'],
     ];
     if (!isset($map[$entity])) {
         return [];

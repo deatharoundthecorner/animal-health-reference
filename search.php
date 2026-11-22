@@ -2,12 +2,13 @@
 declare(strict_types=1);
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/feeding.php';
 
 $q = get_string('q');
 $tooShort = $q !== '' && mb_strlen($q) < 2;
 $pageTitle = ($q !== '' ? 'Search: ' . $q : 'Search') . ' | ' . APP_NAME;
 
-$animals = $diseases = $parts = $symptoms = [];
+$animals = $diseases = $parts = $symptoms = $feeds = [];
 $limit = 20;
 
 if ($q !== '' && !$tooShort) {
@@ -59,9 +60,22 @@ if ($q !== '' && !$tooShort) {
          LIMIT :limit",
         ['s1' => $like, 'limit' => $limit]
     )->fetchAll();
+
+    if (feeding_available($pdo)) {
+        $feeds = run_query(
+            $pdo,
+            "SELECT id, feed_name, scientific_name, feed_category, description
+             FROM feeds
+             WHERE review_status <> 'draft'
+               AND (feed_name LIKE :f1 OR scientific_name LIKE :f2 OR local_name_si LIKE :f3 OR local_name_ta LIKE :f4 OR description LIKE :f5)
+             ORDER BY feed_name ASC
+             LIMIT :limit",
+            ['f1' => $like, 'f2' => $like, 'f3' => $like, 'f4' => $like, 'f5' => $like, 'limit' => $limit]
+        )->fetchAll();
+    }
 }
 
-$totalResults = count($animals) + count($diseases) + count($parts) + count($symptoms);
+$totalResults = count($animals) + count($diseases) + count($parts) + count($symptoms) + count($feeds);
 
 require __DIR__ . '/includes/header.php';
 require __DIR__ . '/includes/navbar.php';
@@ -132,6 +146,21 @@ require __DIR__ . '/includes/navbar.php';
                             <strong><?= e($part['part_name']) ?></strong>
                             <span class="text-muted small ms-2"><?= e($part['system_name']) ?></span>
                             <div class="small text-muted"><?= e(excerpt($part['description'], 130)) ?></div>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+        <?php endif; ?>
+
+        <?php if ($feeds): ?>
+            <section class="mb-4">
+                <h2 class="h4 section-heading">Feeds <span class="badge text-bg-secondary"><?= count($feeds) ?></span></h2>
+                <div class="list-group">
+                    <?php foreach ($feeds as $feed): ?>
+                        <a class="list-group-item list-group-item-action" href="feed-details.php?id=<?= (int) $feed['id'] ?>">
+                            <strong><?= e($feed['feed_name']) ?></strong>
+                            <span class="badge text-bg-light border ms-2"><?= e(FEED_CATEGORIES[$feed['feed_category']] ?? $feed['feed_category']) ?></span>
+                            <div class="small text-muted"><?= e(excerpt($feed['description'], 130)) ?></div>
                         </a>
                     <?php endforeach; ?>
                 </div>

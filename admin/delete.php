@@ -12,6 +12,8 @@ $types = [
     'disease' => ['table' => 'diseases', 'name' => 'disease_name', 'back' => 'diseases.php', 'label' => 'disease'],
     'body_part' => ['table' => 'body_parts', 'name' => 'part_name', 'back' => 'body-parts.php', 'label' => 'body part'],
     'source' => ['table' => 'sources', 'name' => 'title', 'back' => 'sources.php', 'label' => 'source'],
+    'feed' => ['table' => 'feeds', 'name' => 'feed_name', 'back' => 'feeds.php', 'label' => 'feed type'],
+    'plan' => ['table' => 'feeding_plans', 'name' => 'display_name', 'back' => 'feeding-plans.php', 'label' => 'feeding plan'],
 ];
 
 $typeKey = (string) ($_GET['type'] ?? '');
@@ -22,11 +24,15 @@ if (!isset($types[$typeKey]) || $id <= 0) {
 }
 $type = $types[$typeKey];
 
-$record = run_query(
-    $pdo,
-    "SELECT * FROM {$type['table']} WHERE id = :id LIMIT 1",
-    ['id' => $id]
-)->fetch();
+if (in_array($typeKey, ['feed', 'plan'], true) && !feeding_available($pdo)) {
+    header('Location: dashboard.php');
+    exit;
+}
+
+$selectSql = $typeKey === 'plan'
+    ? "SELECT p.*, CONCAT(a.common_name, ' - ', p.life_stage) AS display_name FROM feeding_plans p INNER JOIN animals a ON a.id = p.animal_id WHERE p.id = :id LIMIT 1"
+    : "SELECT * FROM {$type['table']} WHERE id = :id LIMIT 1";
+$record = run_query($pdo, $selectSql, ['id' => $id])->fetch();
 
 if (!$record) {
     flash_set('warning', 'That record no longer exists.');
@@ -59,6 +65,29 @@ $impactQueries = [
         'body part citations' => 'SELECT COUNT(*) FROM body_part_sources WHERE source_id = :id',
     ],
 ];
+$impactQueries['feed'] = [
+    'feeding plans that use it' => 'SELECT COUNT(DISTINCT plan_id) FROM feeding_plan_items WHERE feed_id = :id',
+    'source links' => 'SELECT COUNT(*) FROM feed_sources WHERE feed_id = :id',
+];
+$impactQueries['plan'] = [
+    'diet items' => 'SELECT COUNT(*) FROM feeding_plan_items WHERE plan_id = :id',
+    'weight table points' => 'SELECT COUNT(*) FROM feeding_plan_points WHERE plan_id = :id',
+    'source links' => 'SELECT COUNT(*) FROM feeding_plan_sources WHERE plan_id = :id',
+];
+if (feeding_available($pdo)) {
+    $impactQueries['animal']['feeding plans'] = 'SELECT COUNT(*) FROM feeding_plans WHERE animal_id = :id';
+    $impactQueries['animal']['foods-to-avoid entries'] = 'SELECT COUNT(*) FROM animal_unsafe_foods WHERE animal_id = :id';
+}
+
+// A feed that is still part of a feeding plan cannot be deleted: remove it from the plans first.
+$blocked = '';
+if ($typeKey === 'feed') {
+    $inUse = (int) run_query($pdo, 'SELECT COUNT(DISTINCT plan_id) FROM feeding_plan_items WHERE feed_id = :id', ['id' => $id])->fetchColumn();
+    if ($inUse > 0) {
+        $blocked = 'This feed is used by ' . $inUse . ' feeding plan' . ($inUse === 1 ? '' : 's') . '. Remove it from those plans first, so no plan changes without you noticing.';
+    }
+}
+
 $impact = [];
 foreach ($impactQueries[$typeKey] as $label => $sql) {
     $n = (int) run_query($pdo, $sql, ['id' => $id])->fetchColumn();
@@ -69,6 +98,11 @@ foreach ($impactQueries[$typeKey] as $label => $sql) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();
+    if ($blocked !== '') {
+        flash_set('danger', $blocked);
+        header('Location: ' . $type['back']);
+        exit;
+    }
     run_query($pdo, "DELETE FROM {$type['table']} WHERE id = :id", ['id' => $id]);
     if ($typeKey === 'animal') {
         delete_uploaded_image($record['image'] ?? null);
@@ -92,13 +126,18 @@ admin_header('Delete ' . $type['label']);
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
-        <p class="text-muted small">This cannot be undone.</p>
+        <?php if ($blocked !== ''): ?>
+            <div class="alert alert-warning"><?= e($blocked) ?></div>
+            <a href="<?= e($type['back']) ?>" class="btn btn-secondary">Back</a>
+        <?php else: ?>
+            <p class="text-muted small">This cannot be undone.</p>
 
-        <form method="post" class="d-flex gap-2">
-            <?= csrf_field() ?>
-            <button type="submit" class="btn btn-danger">Yes, delete</button>
-            <a href="<?= e($type['back']) ?>" class="btn btn-secondary">Cancel</a>
-        </form>
+            <form method="post" class="d-flex gap-2">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn btn-danger">Yes, delete</button>
+                <a href="<?= e($type['back']) ?>" class="btn btn-secondary">Cancel</a>
+            </form>
+        <?php endif; ?>
     </div>
 </div>
 <?php admin_footer();

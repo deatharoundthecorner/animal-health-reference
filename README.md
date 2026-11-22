@@ -8,10 +8,11 @@ An open-source reference for **biologists, veterinarians and students**. It link
 - from an organ → the species that have it and how it differs between them
 - from a disease → affected species, organs, signs, transmission and prevention
 - from a set of clinical signs → the recorded diseases associated with them
+- from an animal and its body weight → which feeds to give and how much, by life stage and type of feed (with Sri Lankan fodder and feeds)
 
 Every record cites its sources and shows whether a qualified person has reviewed it.
 
-> **Reference only.** This is not a diagnostic or treatment tool. It deliberately contains no dosage or treatment advice.
+> **Reference only.** This is not a diagnostic or treatment tool. It deliberately contains no drug dosage or treatment advice. Feeding amounts are general starting points from published guidelines, not a prescription.
 >
 > **The sample data has not been expert-reviewed.** It was drafted from general veterinary knowledge, linked to references, and is marked *Not yet expert-reviewed* everywhere it is shown. See [Data and trust](#data-and-trust).
 
@@ -23,12 +24,15 @@ Every record cites its sources and shows whether a qualified person has reviewed
 - Anatomy grouped by body system, with species-specific notes (for example “ruminants have a four-compartment stomach”)
 - Diseases with cause, zoonotic and WOAH-listed flags, signs, affected species and organs, transmission and prevention
 - Symptom lookup: pick signs (and optionally a species) and see matching diseases ranked by how many signs they share
-- Site-wide search across animals, diseases, organs and signs
+- **Feeding calculator:** choose an animal, its life stage and its body weight; see the daily target and the amount of each feed, for every type of feed (for example dry, wet or home-cooked food for a dog; fresh grass, Gliricidia and concentrate for a dairy cow). Amounts change with weight, and with the type of feed
+- **Feed types guide:** fodder grasses, tree leaves, concentrates, pet foods and supplements with nutrient values, availability in Sri Lanka, cautions and the plans that use them
+- **Foods to avoid** for each species (for example chocolate and onions for dogs and cats, sudden grain increases for ruminants)
+- Site-wide search across animals, diseases, organs, signs and feeds
 - Review badges, source lists and an “About & sources” page that lists every source and its license
 
 **Admin** (`/admin`)
 
-- Create, edit and delete animals, diseases, body parts, sources, groups, body systems and signs
+- Create, edit and delete animals, diseases, body parts, feed types, feeding plans, foods to avoid, sources, groups, body systems and signs
 - Link records with optional species-specific notes; cite sources; set review status (draft / not yet reviewed / reviewed)
 - Dashboard with review progress and “gaps to fill” (records without sources, animals without anatomy, …)
 - Draft records are hidden from the public until you publish them
@@ -43,7 +47,12 @@ categories ─┐
                    └──< animal_diseases >── diseases >──< disease_symptoms >── symptoms
 
 animals / diseases / body_parts  >──<  animal_sources / disease_sources / body_part_sources  >──  sources
+
+animals ──< feeding_plans ──< feeding_plan_items >── feeds        feeding_plans ──< feeding_plan_points
+animals ──< animal_unsafe_foods          feeds / feeding_plans  >──<  feed_sources / feeding_plan_sources  >──  sources
 ```
+
+A **feeding plan** is one animal at one life stage. It defines the total daily amount, scaled by body weight (as a multiple of the resting energy requirement, a % of body weight as dry matter or as fed, a fixed amount, or a weight table), and its **diet options** list which feeds make up that total. See the comments in [database/schema-feeding.sql](database/schema-feeding.sql) and [includes/feeding.php](includes/feeding.php).
 
 Identifiers from public ontologies are stored so the data stays interoperable:
 
@@ -81,9 +90,17 @@ PHP 8.1+ (procedural, `strict_types`), MySQL / MariaDB via PDO prepared statemen
 
 5. Open <http://localhost/animal-health-reference/> (use your folder's name) and sign in at `/admin/login.php`.
 
-Prefer phpMyAdmin? Import `database/schema.sql`, then `database/seed.sql` (optional sample data), then run step 4.
+Prefer phpMyAdmin? Import, in this order, `database/schema.sql`, `database/schema-feeding.sql`, and (optional sample data) `database/seed.sql`, `database/seed-feeding.sql`; then run step 4.
 
 `tools/install.php` refuses to touch a database that already has tables. Use `--force` to drop and recreate everything (**all data is lost**), or `--no-seed` to install the schema without sample data.
+
+### Upgrading an existing installation (adds the feeding guide, keeps your data)
+
+```powershell
+C:\xampp\php\php.exe tools\upgrade.php
+```
+
+It only creates the missing feeding tables and, if there are no feed types yet, loads the feeding sample data. It is safe to run more than once. Back up your database first. Until you run it, the feeding pages and menus stay hidden and everything else keeps working.
 
 ### Upgrading from the first version of this project
 
@@ -101,6 +118,8 @@ Defaults match a stock XAMPP install (`root`, empty password, database `biodiver
   ```
 
 - or set the environment variables `BIO_DB_HOST`, `BIO_DB_PORT`, `BIO_DB_NAME`, `BIO_DB_USER`, `BIO_DB_PASS`.
+
+Environment variables win over `config/config.local.php`, which wins over the defaults.
 
 ## Data and trust
 
@@ -124,7 +143,19 @@ Ground rules (details in [CONTRIBUTING.md](CONTRIBUTING.md)):
 - Small coverage: domestic mammals and poultry are the most complete.
 - Anatomy uses vertebrate terms; invertebrates and fish-specific structures (gills, swim bladder) are not yet covered.
 - No treatment, dosage or drug information, by design.
+- **Feeding amounts are partial and unreviewed.** They come from the cited sources (WSAVA/MSD energy factors for dogs and cats, the Merck manuals, a Sri Lankan dairy-farm study, AHDB, PoultryHub and others) but have not been checked by a veterinarian or animal nutritionist. Many Sri Lankan production stages are missing: early-lactation cows, goats and sheep that are pregnant, lactating or growing, broilers, buffalo. Example rations are built from feeds measured on nine Kurunegala dairy farms and should be reviewed by a livestock nutritionist.
+- Sinhala and Tamil names of feeds are empty; they should be added by native speakers.
 - No edit history / audit log yet.
+
+### Running the tests
+
+The feeding calculator maths is unit-tested against values worked out by hand (no database needed):
+
+```powershell
+C:\xampp\php\php.exe tests\feeding_test.php
+```
+
+CI runs it on every push, together with a full install and a smoke test of the pages.
 
 ## Security
 
@@ -150,14 +181,16 @@ animal-health-reference/
 ├── index.php, animals.php, animal-details.php      public pages
 ├── body-parts.php, body-part-details.php
 ├── diseases.php, disease-details.php
+├── feeding.php, feeds.php, feed-details.php        feeding calculator and feed types guide
 ├── symptoms.php, search.php, about.php
 ├── endangered.php            redirects to animals.php?threatened=1 (old links keep working)
-├── admin/                    admin area (login, dashboard, CRUD, sources, lists)
+├── admin/                    admin area (login, dashboard, CRUD, feeds, plans, sources, lists)
 ├── config/                   config.php, connection.php, db.php
-├── database/                 schema.sql, seed.sql
-├── includes/                 header, navbar, footer, shared helpers
+├── database/                 schema.sql, schema-feeding.sql, seed.sql, seed-feeding.sql
+├── includes/                 header, navbar, footer, shared helpers, feeding.php (calculator maths)
 ├── assets/                   css, js, images (uploads/ is git-ignored)
-├── tools/                    install.php, create-admin.php (command line only)
+├── tools/                    install.php, upgrade.php, create-admin.php (command line only)
+├── tests/                    feeding_test.php (unit tests for the calculator)
 ├── docs/DEPLOYMENT.md        how to host it (GitHub Pages cannot run PHP)
 ├── .github/                  CI workflow, issue and pull-request templates
 ├── .htaccess                 Apache hardening (blocks config/, database/, includes/, tools/, dotfiles)
@@ -169,7 +202,7 @@ animal-health-reference/
 
 ## Ideas for the future
 
-Importers for NCBI Taxonomy, Uberon and Disease Ontology; a read-only JSON API; multi-user roles with an edit history and a reviewer workflow; anatomy terms for fish and invertebrates; translations; automated tests.
+Importers for NCBI Taxonomy, Uberon and Disease Ontology; a read-only JSON API; multi-user roles with an edit history and a reviewer workflow; anatomy terms for fish and invertebrates; more feeding plans (buffalo, broilers, productive goats and sheep, milk-yield based rations) reviewed by Sri Lankan livestock experts; Sinhala and Tamil translations.
 
 ## License
 

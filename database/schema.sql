@@ -2,7 +2,9 @@
 -- Compatible with MySQL 5.7+/8 and MariaDB 10.3+ (XAMPP).
 --
 -- Import with:  php tools/install.php        (creates the database, schema and sample data)
--- Or manually:  import database/schema.sql, then database/seed.sql in phpMyAdmin.
+-- Or manually:  in phpMyAdmin import, in this order:
+--               schema.sql, schema-feeding.sql, seed.sql, seed-feeding.sql
+--               (the two seed files are optional sample data)
 --
 -- Design notes
 --   * Anatomy (body_parts) and diseases are first-class tables, linked to animals
@@ -20,6 +22,14 @@ CREATE DATABASE IF NOT EXISTS biodiversity_system CHARACTER SET utf8mb4 COLLATE 
 USE biodiversity_system;
 
 SET FOREIGN_KEY_CHECKS = 0;
+-- Feeding guide tables (created by schema-feeding.sql)
+DROP TABLE IF EXISTS feeding_plan_sources;
+DROP TABLE IF EXISTS feed_sources;
+DROP TABLE IF EXISTS animal_unsafe_foods;
+DROP TABLE IF EXISTS feeding_plan_items;
+DROP TABLE IF EXISTS feeding_plan_points;
+DROP TABLE IF EXISTS feeding_plans;
+DROP TABLE IF EXISTS feeds;
 DROP TABLE IF EXISTS body_part_sources;
 DROP TABLE IF EXISTS disease_sources;
 DROP TABLE IF EXISTS animal_sources;

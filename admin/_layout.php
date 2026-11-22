@@ -38,16 +38,29 @@ function render_errors(array $errors): string
 
 function admin_header(string $title, string $active = ''): void
 {
+    global $pdo;
+    $feedingInstalled = isset($pdo) && $pdo instanceof PDO && feeding_available($pdo);
+
+    // A plain link is [key => [href, label]]; a dropdown is [key => ['group', label, [key => [href, label], ...]]].
     $links = [
         'dashboard' => ['dashboard.php', 'Dashboard'],
         'animals' => ['animals.php', 'Animals'],
         'diseases' => ['diseases.php', 'Diseases'],
         'body-parts' => ['body-parts.php', 'Body parts'],
-        'symptoms' => ['symptoms.php', 'Symptoms'],
-        'sources' => ['sources.php', 'Sources'],
-        'categories' => ['categories.php', 'Groups'],
-        'body-systems' => ['body-systems.php', 'Body systems'],
     ];
+    if ($feedingInstalled) {
+        $links['feeding'] = ['group', 'Feeding', [
+            'feeds' => ['feeds.php', 'Feed types'],
+            'plans' => ['feeding-plans.php', 'Feeding plans'],
+            'unsafe' => ['unsafe-foods.php', 'Foods to avoid'],
+        ]];
+    }
+    $links['symptoms'] = ['symptoms.php', 'Symptoms'];
+    $links['sources'] = ['sources.php', 'Sources'];
+    $links['lists'] = ['group', 'More', [
+        'categories' => ['categories.php', 'Animal groups'],
+        'body-systems' => ['body-systems.php', 'Body systems'],
+    ]];
     ?>
 <!doctype html>
 <html lang="en">
@@ -68,8 +81,20 @@ function admin_header(string $title, string $active = ''): void
         </button>
         <div class="collapse navbar-collapse" id="adminNav">
             <ul class="navbar-nav me-auto">
-                <?php foreach ($links as $key => [$href, $label]): ?>
-                    <li class="nav-item"><a class="nav-link <?= $active === $key ? 'active' : '' ?>" href="<?= e($href) ?>"><?= e($label) ?></a></li>
+                <?php foreach ($links as $key => $link): ?>
+                    <?php if ($link[0] === 'group'): ?>
+                        <?php $groupActive = isset($link[2][$active]); ?>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle <?= $groupActive ? 'active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><?= e($link[1]) ?></a>
+                            <ul class="dropdown-menu">
+                                <?php foreach ($link[2] as $childKey => [$childHref, $childLabel]): ?>
+                                    <li><a class="dropdown-item <?= $active === $childKey ? 'active' : '' ?>" href="<?= e($childHref) ?>"><?= e($childLabel) ?></a></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </li>
+                    <?php else: ?>
+                        <li class="nav-item"><a class="nav-link <?= $active === $key ? 'active' : '' ?>" href="<?= e($link[0]) ?>"><?= e($link[1]) ?></a></li>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             </ul>
             <span class="text-white-50 small me-3">Signed in as <?= e((string) ($_SESSION['admin_username'] ?? '')) ?></span>

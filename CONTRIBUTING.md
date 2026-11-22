@@ -19,6 +19,21 @@ Thank you for helping. The most valuable contributions are **corrections and add
 7. **Say what is uncertain.** Prefer “associated with” to “caused by” when the evidence is incomplete, and keep conservation statuses dated or linked to the IUCN Red List.
 8. **Respect animal and human safety.** Flag zoonotic and notifiable diseases clearly.
 
+## Rules for feeding data (feed types, feeding plans, foods to avoid)
+
+Wrong feeding advice can harm animals, so these rules are stricter than for the rest of the data.
+
+1. **Every number needs a source.** Daily amounts, energy factors, nutrient values and weight bands must come from a guideline, extension service, textbook table or peer-reviewed study, and the plan or feed must cite it. Say in the plan notes which number came from which source.
+2. **Do not invent rations.** If a split between feeds (for example forage and concentrate) is an example rather than a published recommendation, say so in the plan notes and check it with the crude-protein check (set the *target protein* of the plan). Prefer rations built from feeds whose composition is measured and cited.
+3. **Prefer measured local data.** For Sri Lankan fodder and feeds use analyses done on Sri Lankan material (for example Peradeniya, Ruhuna, the Department of Animal Production and Health, or peer-reviewed Sri Lankan studies), and cite them. Leave a nutrient value empty when it is not known; the calculator then shows dry matter instead of guessing a fresh weight.
+4. **Use ranges honestly.** Enter the range the sources give, and a typical value only if a source supports it. State the weight band the numbers apply to; the calculator refuses to extrapolate outside it.
+5. **Say what is not covered.** Pregnancy, lactation, growth, illness and hard work usually need different amounts. Add a plan for those stages only when you have a source for them, and mention the limits in the notes.
+6. **Foods to avoid** need a reason in your own words and, where possible, a source. Err on the side of caution.
+7. **No drug dosing, and no medicines hidden in feed.** Mineral and salt mixes are fine when sourced; anything else is out of scope.
+8. **Review.** New plans start as `unreviewed`. A veterinarian or animal nutritionist who has checked the numbers against the cited sources may mark them `reviewed`. Reviewers from Sri Lankan institutions are especially welcome.
+9. **Add or change the maths only with tests.** The calculator is in `includes/feeding.php`; add a case with a hand-worked expected value to `tests/feeding_test.php`.
+10. **Translations.** Sinhala and Tamil feed names should be added by native speakers, not machine translation.
+
 ## Rules for code
 
 - PHP 8+, `declare(strict_types=1)`, procedural style that a student can follow.
@@ -32,6 +47,7 @@ Thank you for helping. The most valuable contributions are **corrections and add
 ## Before you open a pull request
 
 - Lint all PHP files: `php -l path/to/file.php` (or run it over the whole tree).
+- Run the unit tests: `php tests/feeding_test.php` (it must report 0 failed).
 - Install into a **scratch database** (not your real one) with `BIO_DB_NAME=bio_test php tools/install.php --force` and click through the pages you changed, including the admin forms with valid and invalid input.
 - If you changed the schema, update `database/schema.sql`, `database/seed.sql` and the data-model section of `README.md`.
 - If you added sample data, keep `review_status = 'unreviewed'` and add its sources.

@@ -23,6 +23,8 @@ body {
 .stat-2 { background: linear-gradient(135deg, #2d6a4f, #40916c); }
 .stat-3 { background: linear-gradient(135deg, #7f5539, #b08968); }
 .stat-4 { background: linear-gradient(135deg, #5a4a42, #8d7b6f); }
+.stat-5 { background: linear-gradient(135deg, #386641, #6a994e); }
+.stat-6 { background: linear-gradient(135deg, #bc6c25, #dda15e); }
 
 .table-card {
     border: 0;

@@ -50,30 +50,38 @@ require __DIR__ . '/includes/navbar.php';
         <div class="container">
             <h2 class="section-heading h3 mb-3">Start with what you know</h2>
             <div class="row g-4">
-                <div class="col-sm-6 col-lg-3">
+                <div class="col-sm-6 col-lg">
                     <a class="explore-card" href="animals.php">
                         <h3 class="h5">I know the animal</h3>
                         <p class="small text-muted mb-0">Open a species to see its taxonomy, body parts and the diseases that affect it.</p>
                     </a>
                 </div>
-                <div class="col-sm-6 col-lg-3">
+                <div class="col-sm-6 col-lg">
                     <a class="explore-card" href="body-parts.php">
                         <h3 class="h5">I know the organ</h3>
                         <p class="small text-muted mb-0">See which species have it, how it differs between them and which diseases affect it.</p>
                     </a>
                 </div>
-                <div class="col-sm-6 col-lg-3">
+                <div class="col-sm-6 col-lg">
                     <a class="explore-card" href="diseases.php">
                         <h3 class="h5">I know the disease</h3>
                         <p class="small text-muted mb-0">Cause, signs, affected species and organs, transmission and prevention.</p>
                     </a>
                 </div>
-                <div class="col-sm-6 col-lg-3">
+                <div class="col-sm-6 col-lg">
                     <a class="explore-card" href="symptoms.php">
                         <h3 class="h5">I have clinical signs</h3>
                         <p class="small text-muted mb-0">Pick the signs you see and compare the recorded diseases that share them.</p>
                     </a>
                 </div>
+                <?php if (feeding_available($pdo)): ?>
+                    <div class="col-sm-6 col-lg">
+                        <a class="explore-card" href="feeding.php">
+                            <h3 class="h5">I need to feed an animal</h3>
+                            <p class="small text-muted mb-0">Feed types and daily amounts by animal, life stage and body weight.</p>
+                        </a>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </section>

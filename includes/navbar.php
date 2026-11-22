@@ -12,11 +12,16 @@ $navCollections = $haveDb ? count_disease_collections($pdo) : ['zoonotic' => 0, 
 $navThreatened = $haveDb ? count_threatened_animals($pdo) : 0;
 $navSystems = $haveDb ? systems_with_counts($pdo) : [];
 
+require_once __DIR__ . '/feeding.php';
+$navFeeding = $haveDb && feeding_available($pdo);
+$navFeedCounts = $navFeeding ? count_feeds_by_category($pdo) : [];
+
 $kindMenuLabels = ['companion' => 'Companion animals', 'livestock' => 'Livestock', 'wildlife' => 'Wildlife', 'other' => 'Other animals'];
 
 $isAnimals = in_array($currentPage, ['animals.php', 'animal-details.php'], true);
 $isAnatomy = in_array($currentPage, ['body-parts.php', 'body-part-details.php'], true);
 $isDiseases = in_array($currentPage, ['diseases.php', 'disease-details.php'], true);
+$isFeeding = in_array($currentPage, ['feeding.php', 'feeds.php', 'feed-details.php'], true);
 ?>
 <nav class="navbar navbar-expand-lg navbar-dark navbar-main py-3 sticky-top">
     <div class="container">
@@ -75,8 +80,25 @@ $isDiseases = in_array($currentPage, ['diseases.php', 'disease-details.php'], tr
                     </ul>
                 </li>
 
+                <?php if ($navFeeding): ?>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle <?= $isFeeding ? 'active' : '' ?>" href="feeding.php" role="button" data-bs-toggle="dropdown" aria-expanded="false">Feeding</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="feeding.php">Feeding calculator</a></li>
+                            <li><a class="dropdown-item" href="feeds.php">All feed types</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Feed types</h6></li>
+                            <?php foreach (FEED_CATEGORIES as $key => $label): ?>
+                                <?php if (($navFeedCounts[$key] ?? 0) > 0): ?>
+                                    <li><a class="dropdown-item" href="<?= e(page_url('feeds.php', ['category' => $key])) ?>"><?= e($label) ?> <span class="count"><?= (int) $navFeedCounts[$key] ?></span></a></li>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </ul>
+                    </li>
+                <?php endif; ?>
+
                 <li class="nav-item">
-                    <a class="nav-link <?= $currentPage === 'symptoms.php' ? 'active' : '' ?>" href="symptoms.php">Symptom lookup</a>
+                    <a class="nav-link <?= $currentPage === 'symptoms.php' ? 'active' : '' ?>" href="symptoms.php" title="Find diseases by clinical signs">Symptoms</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <?= $currentPage === 'about.php' ? 'active' : '' ?>" href="about.php">About</a>

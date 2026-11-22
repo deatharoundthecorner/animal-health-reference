@@ -31,7 +31,7 @@ Requirements: **PHP 8.1 or newer** with the `pdo_mysql`, `mbstring` and `fileinf
    ];
    ```
 
-4. **Create the tables.** If you have SSH access, run `php tools/install.php`. Otherwise open phpMyAdmin, select your database, and import `database/schema.sql` and then (optionally) `database/seed.sql`. If your host does not allow creating databases from SQL, delete the first two lines (`CREATE DATABASE …` and `USE …`) at the top of each file before importing.
+4. **Create the tables.** If you have SSH access, run `php tools/install.php`. Otherwise open phpMyAdmin, select your database, and import, in this order, `database/schema.sql`, `database/schema-feeding.sql` and then (optionally, for the sample data) `database/seed.sql` and `database/seed-feeding.sql`. If your host does not allow creating databases from SQL, delete the lines starting `CREATE DATABASE` and `USE` at the top of each file before importing.
 5. **Create the administrator.** With SSH: `php tools/create-admin.php admin`. Without SSH, generate a password hash on your own computer:
 
    ```bash
@@ -59,4 +59,10 @@ Requirements: **PHP 8.1 or newer** with the `pdo_mysql`, `mbstring` and `fileinf
 
 ## Updating
 
-Upload the new files over the old ones (keep `config/config.local.php` and `assets/images/uploads/`). The schema may change between versions; check the README and release notes before importing `schema.sql` again, because importing it **drops and recreates all tables**.
+Upload the new files over the old ones (keep `config/config.local.php` and `assets/images/uploads/`). Then, with SSH access, run:
+
+```bash
+php tools/upgrade.php
+```
+
+It adds any missing tables (for example the feeding guide) without touching your data. Without SSH, import `database/schema-feeding.sql` in phpMyAdmin (it only uses `CREATE TABLE IF NOT EXISTS`). **Never import `schema.sql` on a live site**: it drops and recreates all tables. Until the upgrade is run, new features stay hidden and the rest of the site keeps working.

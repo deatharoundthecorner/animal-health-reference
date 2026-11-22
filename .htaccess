@@ -3,7 +3,7 @@
 
 <IfModule mod_alias.c>
     # Internal folders and version-control metadata are never requested over the web.
-    RedirectMatch 404 (?i)(^|/)(\.git|\.github|config|database|includes|tools|docs)(/|$)
+    RedirectMatch 404 (?i)(^|/)(\.git|\.github|config|database|includes|tools|tests|docs)(/|$)
 </IfModule>
 
 <IfModule mod_authz_core.c>
